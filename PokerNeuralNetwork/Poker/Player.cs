@@ -4,72 +4,139 @@ using System.Linq;
 using System.Windows.Forms;
 
 namespace PokerNeuralNetwork.Poker {
-    class Player {
-        public enum Blinds {
-            dealer,
-            bigblind,
-            smallblind
+    public class Player {
+
+        /// <summary>
+        /// Variables used for drawing on the screen
+        /// </summary>
+        private bool drawing = false;
+        private Panel panel;
+        private TextBox card1;
+        private TextBox card2;
+        private TextBox moneyText;
+        private TextBox blindText;
+        private TextBox betText;
+
+        /// <summary>
+        /// The current position in the board
+        /// </summary>
+        private Holdem.Blinds blind;
+
+        /// <summary>
+        /// Reference to the board
+        /// </summary>
+        private Board board;
+
+        /// <summary>
+        /// The ID for this player
+        /// </summary>
+        public byte ID { get; private set; }
+
+        /// <summary>
+        /// This player's current hand
+        /// </summary>
+        private List<Card> Hand { get; set; }
+
+        /// <summary>
+        /// This player's current balance
+        /// </summary>
+        private double balance;
+        public double Balance {
+            get { return Math.Round(balance, 2, MidpointRounding.AwayFromZero); }
+            private set { balance = Math.Round(value, 2, MidpointRounding.AwayFromZero); }
         }
 
-        bool draw = false;
-        TextBox card1;
-        TextBox card2;
-        TextBox moneyText;
-        TextBox blindText;
-        TextBox betText;
+        /// <summary>
+        /// This player's current bet
+        /// </summary>
+        private double bet;
+        public double Bet {
+            get { return Math.Round(bet, 2, MidpointRounding.AwayFromZero); }
+            private set { bet = Math.Round(value, 2, MidpointRounding.AwayFromZero); }
+        }
 
-        int id;
-        public Card[] hand = new Card[4];
-        public int money;
-        public int currentBet;
+        /// <summary>
+        /// Whether this player has folded this hand
+        /// </summary>
+        public bool Folded { get; private set; }
 
-        public int[] highCards;
+        /// <summary>
+        /// Reference to the table's Random object
+        /// </summary>
+        private Random rng;
 
+        /// <summary>
+        /// Create a new player with given id and balance
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="balance"></param>
+        public Player(byte id, double balance, Board board, ref Random rng) {
+            ID = id;
+            Balance = balance;
+            this.board = board;
+            this.rng = rng;
 
-        public Player(int id, int money) {
-            this.id = id;
-            this.money = money;
-
-            highCards = new int[5];
+            Hand = new List<Card>();
 
             UpdateText();
         }
 
-        public void SetPanel(TableLayoutPanel panel) {
-            draw = true;
+        /// <summary>
+        /// Set the panels for drawing or disables drawing
+        /// </summary>
+        /// <param name="panel"></param>
+        public void SetPanel(TableLayoutPanel panel = null) {
+            if (panel == null) {
+                drawing = false;
 
-            panel.Visible = true;
+                if (this.panel != null) {
+                    this.panel.Visible = false;
+                    this.panel = null;
+                }
+            } else {
+                drawing = true;
 
-            card1 = (TextBox)panel.Controls.Find("Player" + id + "Card1", true)[0];
-            card2 = (TextBox)panel.Controls.Find("Player" + id + "Card2", true)[0];
-            moneyText = (TextBox)panel.Controls.Find("Player" + id + "Money", true)[0];
-            blindText = (TextBox)panel.Controls.Find("BlindDealerText" + id, true)[0];
-            betText = (TextBox)panel.Controls.Find("CurrentBet" + id, true)[0];
+                this.panel = panel;
+                this.panel.Visible = true;
+
+                card1 = (TextBox)panel.Controls.Find("Player" + ID + "Card1", true)[0];
+                card2 = (TextBox)panel.Controls.Find("Player" + ID + "Card2", true)[0];
+                moneyText = (TextBox)panel.Controls.Find("Player" + ID + "Money", true)[0];
+                blindText = (TextBox)panel.Controls.Find("BlindDealerText" + ID, true)[0];
+                betText = (TextBox)panel.Controls.Find("CurrentBet" + ID, true)[0];
+            }
         }
 
-        public int Play(int targetBet) {
-            //-1 fold
-            // 0 check/call
-            // >1 raise
+        /// <summary>
+        /// Pick what the player does on their turn
+        /// </summary>
+        /// <param name="targetBet"></param>
+        public void MakeMove() {
 
-            int play = 0;
+            int play = rng.Next(0, 1);
+            double raiseAmount = 0;
+
+            if (rng.Next(0, 5) == 0) {
+                raiseAmount = rng.Next(1, 101);
+            } else {
+                play = 0;
+            }
+
+            play = 0;
 
             //Check/Call
             if (play == 0) {
-                return Call(targetBet);
+                Call();
             }
-
-            //Raise
-            if (play > 0) {
-                return Raise(targetBet, 1);
+            
+            else if (play > 0) {
+                Raise(raiseAmount);
             }
-
+            
             //Fold
-            if (play == -1) {
-                return -1;
+            else {
+                Folded = true;
             }
-
-            return 0;
         }
 
         /// <summary>
@@ -77,26 +144,22 @@ namespace PokerNeuralNetwork.Poker {
         /// </summary>
         /// <param name="middleCards">5 field cards</param>
         /// <returns></returns>
-        public int GetHandRanking(Card[] middleCards) {
-            Card[] cards = new Card[7];
+        public Tuple<Holdem.Rankings, List<int>> GetHandRanking(Card[] middleCards) {
+            //The 5 cards that are used to compare hands at the end of a round
+            List<int> highCards = new List<int>( new int[5] );
+
+            List<Card> cards = new List<Card>();
 
             for (int i = 0; i < 2; i++) {
-                cards[i] = hand[i];
+                cards.Add(Hand[i]);
             }
 
             for (int i = 0; i < 5; i++) {
-                cards[i + 2] = middleCards[i];
+                cards.Add(middleCards[i]);
             }
 
             //Sort the cards
-            cards = cards.OrderBy(x => x.value).ToArray();
-
-            //Print the hand
-            string handText = "(" + id + ") Hand: ";
-            foreach (Card card in cards) {
-                handText += card;
-            }
-            Console.WriteLine(handText);
+            cards = cards.OrderBy(x => x.value).ToList();
 
             int[] cardValues = new int[7];
             Card.Suit[] cardSuits = new Card.Suit[7];
@@ -107,7 +170,7 @@ namespace PokerNeuralNetwork.Poker {
                 cardSuits[i] = cards[i].suit;
             }
 
-            ///Royal Flush - 9
+            ///Royal Flush
             int[] flushCards = new[] { Array.IndexOf(cardValues, 10), Array.IndexOf(cardValues, 11), Array.IndexOf(cardValues, 12), Array.IndexOf(cardValues, 13), Array.IndexOf(cardValues, 14) };
 
             //Check if the straight exists
@@ -118,12 +181,11 @@ namespace PokerNeuralNetwork.Poker {
                 //Check suits
                 if (flushSuits.All(x => x == suit)) {
                     //Royal Flush
-                    Console.WriteLine("Royal Flush");
-                    return 9;
+                    return Tuple.Create(Holdem.Rankings.RoyalFlush, highCards.OrderBy(value => value).ToList());
                 }
             }
 
-            //Straight Flush - 8
+            //Straight Flush
             bool straightFlush = false;
             bool straight = false;
             //Check the entire hand
@@ -181,8 +243,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //If there's a straight flush
             if (straightFlush) {
-                Console.WriteLine("Straight Flush");
-                return 8;
+                return Tuple.Create(Holdem.Rankings.StraightFlush, highCards.OrderBy(value => value).ToList());
             }
 
             //All Pairs/Trips/Quads
@@ -207,7 +268,7 @@ namespace PokerNeuralNetwork.Poker {
                 }
             }
 
-            //Four of a Kind - 7
+            //Four of a Kind
             if (quads.Count > 0) {
                 highCards[0] = quads.Pop();
 
@@ -218,46 +279,41 @@ namespace PokerNeuralNetwork.Poker {
                     }
                 }
 
-                Console.WriteLine("Four of a Kind");
-                return 7;
+                return Tuple.Create(Holdem.Rankings.FourOfAKind, highCards.OrderBy(value => value).ToList());
             }
 
-            //Full House - 6
+            //Full House
             if (trips.Count > 0) {
                 if (pairs.Count > 0) {
                     //If you have both a 3 of a kind and a 2 of a kind
                     highCards[0] = trips.Pop();
                     highCards[1] = pairs.Pop();
 
-                    Console.WriteLine("Full House");
-                    return 6;
+                    return Tuple.Create(Holdem.Rankings.FullHouse, highCards.OrderBy(value => value).ToList());
                 }
             }
 
-            //Flush - 5
+            //Flush
             List<int> flush = cards.GroupBy(card => card.suit).FirstOrDefault(card => card.Count() >= 5)?.Select(card => card.value).ToList();
 
             //Has flush
             if (flush?.Count > 0) {
-                //Go through each card
-                int cardCount = flush.Count() - 1;
+                //Reverse the Flush array
+                flush.Reverse();
 
-                //Get the 5 highest cards of the flush
-                for (int i = cardCount; i >= 0; i--) {
-                    highCards[cardCount - i] = flush[i];
+                for (int i = 0; i < 5; i++) {
+                    highCards[i] = flush[i];
                 }
 
-                Console.WriteLine("Flush");
-                return 5;
+                return Tuple.Create(Holdem.Rankings.Flush, highCards.OrderBy(value => value).ToList());
             }
 
             //Straight, checked previously
             if (straight) {
-                Console.WriteLine("Straight");
-                return 4;
+                return Tuple.Create(Holdem.Rankings.Flush, highCards.OrderBy(value => value).ToList());
             }
 
-            //Three of a Kind - 3
+            //Three of a Kind
             if (trips.Count > 0) {
                 highCards[0] = trips.Pop();
 
@@ -279,11 +335,10 @@ namespace PokerNeuralNetwork.Poker {
                     }
                 }
 
-                Console.WriteLine("Three of a Kind");
-                return 3;
+                return Tuple.Create(Holdem.Rankings.ThreeOfAKind, highCards.OrderBy(value => value).ToList());
             }
 
-            //Two Pair - 2
+            //Two Pair
             if (pairs.Count > 1) {
                 highCards[0] = pairs.Pop();
                 highCards[1] = pairs.Pop();
@@ -298,11 +353,10 @@ namespace PokerNeuralNetwork.Poker {
                     }
                 }
 
-                Console.WriteLine("Two Pair");
-                return 2;
+                return Tuple.Create(Holdem.Rankings.TwoPair, highCards.OrderBy(value => value).ToList());
             }
 
-            //One Pair - 1
+            //One Pair
             if (pairs.Count > 0) {
                 highCards[0] = pairs.Pop();
 
@@ -329,116 +383,135 @@ namespace PokerNeuralNetwork.Poker {
                     }
                 }
 
-                Console.WriteLine("One Pair");
-                return 1;
+                return Tuple.Create(Holdem.Rankings.Pair, highCards.OrderBy(value => value).ToList());
             }
 
-            //High Card - 0
+            //High Card
             highCards[0] = cardValues[6];
             highCards[1] = cardValues[5];
             highCards[2] = cardValues[4];
             highCards[3] = cardValues[3];
             highCards[4] = cardValues[2];
 
-            Console.WriteLine("High Card");
-            return 0;
+            return Tuple.Create(Holdem.Rankings.HighCard, highCards.OrderBy(value => value).ToList());
         }
 
-        private int Raise(int targetBet, int raiseAmount) {
-            return Call(targetBet) + Bet(raiseAmount);
+        private void Raise(double raiseAmount) {
+            Call();
+            PlaceBet(raiseAmount);
         }
 
-        private int Call(int targetBet) {
-            if (currentBet < targetBet) {
-                return Bet(targetBet - currentBet);
-            }
-
-            return 0;
-        }
-
-        public void SetBlind(Blinds blind, int amount) {
-            switch (blind) {
-                case Blinds.dealer:
-                    if (draw) {
-                        blindText.Text = "Dealer";
-                    }
-                    break;
-                case Blinds.bigblind:
-                    if (draw) {
-                        blindText.Text = "BB";
-                    }
-                    Bet(amount);
-                    break;
-                case Blinds.smallblind:
-                    if (draw) {
-                        blindText.Text = "SB";
-                    }
-                    Bet(amount);
-                    break;
+        private void Call() {
+            if (Bet < board.Bet) {
+                PlaceBet(board.Bet - Bet);
             }
         }
 
-        public int Bet(int amount) {
+        public void SetBlind(Holdem.Blinds blind) {
+            this.blind = blind;
+
+            UpdateText();
+
+        }
+
+        public void PlaceBet(double amount) {
             if (amount <= 0) {
-                return 0;
+                Console.WriteLine("Bet amount <= 0!", Console.LogTypes.ERROR);
+                return;
             }
 
-            if (amount > money) {
-                amount = money;
+            if (amount > Balance) {
+                amount = Balance;
             }
 
-            currentBet += amount;
+            Bet += amount;
             RemoveMoney(amount);
 
-            UpdateText();
+            board.MakeBet(amount);
 
-            return amount;
+            UpdateText();
         }
 
-        public void AddMoney(int amount) {
-            if (amount < 0) {
+        /// <summary>
+        /// Clears all info for a new hand
+        /// </summary>
+        public void NewHand() {
+            Hand = new List<Card>();
+            Folded = false;
+            blind = Holdem.Blinds.None;
+            Bet = 0;
+        }
+
+        /// <summary>
+        /// Adds money to the player
+        /// </summary>
+        /// <param name="amount"></param>
+        public void AddMoney(double amount) {
+            if (amount <= 0) {
+                Console.WriteLine("Attempted to add $" + amount + " money to " + ID + ".", Console.LogTypes.ERROR);
                 return;
             }
 
-            money += amount;
+            Balance += amount;
 
             UpdateText();
         }
 
-        public void RemoveMoney(int amount) {
+        /// <summary>
+        /// Removes money from the player
+        /// </summary>
+        /// <param name="amount"></param>
+        public void RemoveMoney(double amount) {
             if (amount < 0) {
+                Console.WriteLine("Attempted to remove $" + amount + " money from " + ID + ".", Console.LogTypes.ERROR);
                 return;
             }
 
-            money -= amount;
+            Balance -= amount;
 
-            if (money < 0) {
-                money = 0;
+            if (Balance < 0) {
+                Balance = 0;
             }
 
             UpdateText();
-
         }
 
-        public void UpdateText() {
-            if (draw) {
-                moneyText.Text = "$" + money;
-                betText.Text = "$" + currentBet;
+        private void UpdateText() {
+            if (drawing) {
+                moneyText.Text = "$" + Balance;
+                betText.Text = "$" + Bet;
 
-                card1.Text = hand[0]?.ToString();
-                card2.Text = hand[1]?.ToString();
+                card1.Text = Hand[0]?.ToString();
+                card2.Text = Hand[1]?.ToString();
+
+                switch (blind) {
+                    case Holdem.Blinds.None:
+                        blindText.Text = "None";
+                        break;
+                    case Holdem.Blinds.Dealer:
+                        blindText.Text = "Dealer";
+                        break;
+                    case Holdem.Blinds.BigBlind:
+                        blindText.Text = "BB";
+                        break;
+                    case Holdem.Blinds.SmallBlind:
+                        blindText.Text = "SB";
+                        break;
+                }
             }
         }
 
-        public void Deal(Card card, int num) {
-            hand[num] = card;
+        public void Deal(Card card) {
+            Hand.Add(card);
             UpdateText();
         }
 
         public override string ToString() {
-            string output = "";
+            string output = ID + ":";
 
-            foreach (Card card in hand) {
+            output += Balance + ":";
+
+            foreach (Card card in Hand) {
                 output += card.ToString();
                 output += " ";
             }

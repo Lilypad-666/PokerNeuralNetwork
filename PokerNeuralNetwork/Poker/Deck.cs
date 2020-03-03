@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace PokerNeuralNetwork.Poker {
-    class Deck {
+    public class Deck {
         Random rng;
         Stack<Card> deck;
 

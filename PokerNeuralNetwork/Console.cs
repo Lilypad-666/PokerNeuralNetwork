@@ -18,6 +18,7 @@ namespace PokerNeuralNetwork {
 
         //Different log types
         public enum LogTypes {
+            DEBUG,
             INFO,
             CMD,
             WARN,
@@ -34,6 +35,16 @@ namespace PokerNeuralNetwork {
         /// Current console command, lets you use previous commands
         /// </summary>
         public static int currentCommand = -1;
+
+        /// <summary>
+        /// Log data that hasn't been written yet
+        /// </summary>
+        private static string notWritten = "";
+
+        /// <summary>
+        /// Locker to keep threads from writing over each other
+        /// </summary>
+        private static ReaderWriterLock locker = new ReaderWriterLock();
 
         /// <summary>
         /// Catches all non-ui errors and writes them to the log as a fatal
@@ -83,7 +94,7 @@ namespace PokerNeuralNetwork {
             if (obj != null) {
                 WriteLine(obj.ToString(), type);
             } else {
-                WriteLine("ERROR: null passed in to console!");
+                WriteLine("Null passed in to console!", LogTypes.ERROR);
             }
         }
 
@@ -114,19 +125,6 @@ namespace PokerNeuralNetwork {
             string fileName = Path.GetFileName(stackFrame.GetFileName());
             string methodName = stackFrame.GetMethod().Name;
 
-            //Get the parameters from the function that called this
-            ParameterInfo[] parameters = stackFrame.GetMethod().GetParameters();
-
-            string parameterString = "";
-            if (parameters.Length > 0) {
-                for (int i = 0; i < parameters.Length; i++) {
-                    parameterString += parameters[i].ParameterType.Name + ", ";
-                }
-
-                parameterString = parameterString.Substring(0, parameterString.Length - 2);
-            }
-
-
             //Get the date and time
             DateTime now = DateTime.Now;
             string date = now.ToString("yyyy-MM-dd");
@@ -140,32 +138,47 @@ namespace PokerNeuralNetwork {
 
             output += time + " | ";
             output += typeText + " | ";
-            output += fileName + ":" + methodName + "(" + parameterString + "):" + lineNum + " | ";
+            output += fileName + ":" + methodName + "():" + lineNum + " | ";
 
             output += text + Environment.NewLine;
+
+            if (MainForm.Debug) {
+                System.Console.Write(output);
+            }
 
             //Append the text to the console
             MainForm.ConsoleMessage(output, LogTypeToColor(type));
 
-
-            //If we're in debug, write to the actual console
-            if (MainForm.debug) {
-                System.Console.Write(output);
-            }
-
-            //If a log file for today doesn't exist
-            if (!File.Exists("Logs/" + date + ".log")) {
-                //Make one and write the output to it
-                StreamWriter sw = File.CreateText("Logs/" + date + ".log");
-                sw.Write(output);
-                sw.Close();
-            } else {
-                //Otherwise append the output to the end
-                File.AppendAllText("Logs/" + date + ".log", output);
-            }
-
             //If we're not in debug mode
-            if (!MainForm.debug) {
+            if (!MainForm.Debug) {
+
+                //If a log file for today doesn't exist
+                if (!File.Exists("Logs/" + date + ".log")) {
+                    //Make one and write the output to it
+                    StreamWriter sw = File.CreateText("Logs/" + date + ".log");
+                    sw.Write(output);
+                    sw.Close();
+                } else {
+                    try {
+                        notWritten += output;
+
+                        if (!locker.IsWriterLockHeld) {
+                            locker.AcquireWriterLock(-1);
+
+                            if (locker.IsWriterLockHeld) {
+                                File.AppendAllText("Logs/" + date + ".log", output);
+
+                                notWritten = "";
+                            }
+                        }
+
+                    } catch {
+                        notWritten += output;
+                    } finally {
+                        locker.ReleaseWriterLock();
+                    }
+                }
+
                 //If the log is an error
                 if (type == LogTypes.ERROR) {
                     string caption = "Error!";
@@ -203,6 +216,9 @@ namespace PokerNeuralNetwork {
         /// <returns>Color of text to output</returns>
         private static Color LogTypeToColor(LogTypes type) {
             switch (type) {
+                case LogTypes.DEBUG:
+                    return Color.White;
+
                 case LogTypes.CMD:
                     return Color.Aqua;
 

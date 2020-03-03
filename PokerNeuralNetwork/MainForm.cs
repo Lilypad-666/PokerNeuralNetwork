@@ -1,10 +1,16 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using PokerNeuralNetwork.Poker;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PokerNeuralNetwork {
@@ -17,7 +23,7 @@ namespace PokerNeuralNetwork {
         /// <summary>
         /// Whether we're in debug mode or not
         /// </summary>
-        public static bool debug;
+        public static bool Debug { get; set; }
 
         /// <summary>
         /// A reference to the main form if it's loaded
@@ -25,14 +31,76 @@ namespace PokerNeuralNetwork {
         private static MainForm form = null;
 
         /// <summary>
+        /// A reference to the console popout
+        /// </summary>
+        private static ConsoleForm console = null;
+
+        /// <summary>
+        /// Incrementor for table ids
+        /// </summary>
+        private int tableIDs = 0;
+
+        /// <summary>
         /// Amount of chips for small blind
         /// </summary>
         private int smallBlind = 10;
+        private int SmallBlind {
+            get {
+                return smallBlind;
+            }
+            set {
+                smallBlind = value;
+                Data.Save(new SaveData() {
+                    ConsolePopOut = form.ConsolePopoutCheckbox.Checked,
+                    SmallBlind = SmallBlind,
+                    StartingChips = StartingChips,
+                    Players = Players
+                });
+            }
+        }
 
         /// <summary>
-        /// List of all the poker games
+        /// Number of starting chips
         /// </summary>
-        private List<Poker.Holdem> pokerGames = new List<Poker.Holdem>(0);
+        private int startingChips = 1500;
+        private int StartingChips {
+            get {
+                return startingChips;
+            }
+            set {
+                smallBlind = value;
+                Data.Save(new SaveData() {
+                    ConsolePopOut = form.ConsolePopoutCheckbox.Checked,
+                    SmallBlind = SmallBlind,
+                    StartingChips = StartingChips,
+                    Players = Players
+                });
+            }
+        }
+
+        /// <summary>
+        /// Number of players
+        /// </summary>
+        private int players = 6;
+        private int Players {
+            get {
+                return players;
+            }
+            set {
+                players = value;
+                Data.Save(new SaveData() {
+                    ConsolePopOut = form.ConsolePopoutCheckbox.Checked,
+                    SmallBlind = SmallBlind,
+                    StartingChips = StartingChips,
+                    Players = Players
+                });
+            }
+        }
+
+        /// <summary>
+        /// Random object for generating random numbers
+        /// </summary>
+        private Random rng;
 
         /// <summary>
         /// Creates the main form
@@ -40,24 +108,26 @@ namespace PokerNeuralNetwork {
         public MainForm() {
             InitializeComponent();
 
+            //Sets the static form var to this instance
             form = this;
+
+            //Create the popout console window
+            console = new ConsoleForm();
+
+            //Creates a new Random object
+            rng = new Random();
 
             //Creates the Data and log directories
             Directory.CreateDirectory("Data");
             Directory.CreateDirectory("Logs");
 
             //Doesn't allow resizing or maximizing of the window
-            if (!debug) {
-                FormBorderStyle = FormBorderStyle.None;
-            }
+            FormBorderStyle = FormBorderStyle.None;
 
             MaximizeBox = false;
 
             //Lets the program see keys even when it's not focused (for hotkeys)
             KeyPreview = true;
-
-            //Disables all the tabs
-            ToggleTabs();
 
             //Gets the version number
             string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -78,7 +148,7 @@ namespace PokerNeuralNetwork {
         private void FormLoaded(object sender, EventArgs e) {
 
             //Set the current tab as the first one
-            MainTabControl.SelectedTab = GameTab;
+            MainTabControl.SelectedTab = MainTab;
 
             //Apply the link to the LinkLabels
             GitHubLink.Links.Add(0, 0, "https://github.com/Lilypad-666/PokerNeuralNetwork");
@@ -93,30 +163,61 @@ namespace PokerNeuralNetwork {
             //Set the paint handler for adding images to the title bar
             TitleBarPanel.Paint += new PaintEventHandler(TitleBarPaint);
 
-            //Call event when a key is pressed in the console input to check for an Enter or Arrow key
-            ConsoleInput.KeyDown += new KeyEventHandler(ConsoleInputKeyDown);
-            ConsoleSendButton.Click += new EventHandler(ConsoleSendClick);
-
             //Lets you drag around the window without a windows title bar
             TitleBarPanel.MouseDown += new MouseEventHandler(TitleBar);
             TitleLabel.MouseDown += new MouseEventHandler(TitleBar);
 
-            //When either the SB or the Chip numbers are changed
+            //When one of the settings is changed
             SBValue.ValueChanged += new EventHandler(SBValueChanged);
             ChipsValue.ValueChanged += new EventHandler(ChipsValueChanged);
+            PlayersValue.ValueChanged += new EventHandler(PlayersValueChanged);
+
+            //Call event when a key is pressed in the console input to check for an Enter or Arrow key
+            ConsoleInput.KeyDown += new KeyEventHandler(ConsoleInputKeyDown);
+            ConsoleSendButton.Click += new EventHandler(ConsoleSendClick);
+
+            //Scroll when rich text box changed
+            RichConsoleText.TextChanged += new EventHandler(ConsoleTextChanged);
 
             //Play new game
-            NewGameButton.Click += new EventHandler(StartNewGame);
+            StartHoldemButton.Click += new EventHandler(StartNewGame);
 
-            DrawCheckBox.Cursor = Cursors.Default;
-            DrawCheckBox.Loaded();
-            DrawCheckBox.Click += CheckboxToggle;
+            VisualTab.Enabled = false;
+            SettingsTab.Enabled = false;
+
+            ConsolePopoutCheckbox.Cursor = Cursors.Hand;
+            ConsolePopoutCheckbox.Loaded();
+            ConsolePopoutCheckbox.Click += ConsoleCheckboxToggle;
 
             SBText.Cursor = Cursors.IBeam;
             ChipsText.Cursor = Cursors.IBeam;
 
+            //ThreadPool.SetMinThreads(4, 4);
+            ThreadPool.SetMaxThreads(16, 16);
+
             ExitButton.InitializeButton();
             MinimizeButton.InitializeButton();
+
+            SaveData data = Data.Load();
+
+            Console.WriteLine(JsonConvert.SerializeObject(data));
+
+            if (data != null) {
+                bool boxChecked = data.ConsolePopOut;
+                this.ConsolePopoutCheckbox.Checked = boxChecked;
+
+                if (boxChecked) {
+                    ConsoleTab.Enabled = false;
+                    console.Show();
+                } else {
+                    ConsoleTab.Enabled = true;
+                    console.Hide();
+                }
+
+                this.SBValue.Value = data.SmallBlind;
+                this.ChipsValue.Value = data.StartingChips;
+                this.PlayersValue.Value = data.Players;
+            }
         }
 
         /// <summary>
@@ -124,10 +225,86 @@ namespace PokerNeuralNetwork {
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void CheckboxToggle(object sender, EventArgs e) {
-            //On checkbox toggle, save to the config
+        private void ConsoleCheckboxToggle(object sender, EventArgs e) {
             CustomCheckBox box = (sender as CustomCheckBox);
+
             box.StartRotate();
+
+            if (box.Checked) {
+                ConsoleTab.Enabled = false;
+                console.Show();
+            } else {
+                ConsoleTab.Enabled = true;
+                console.Hide();
+            }
+
+            MainTabControl.Refresh();
+
+            Data.Save(new SaveData() {
+                ConsolePopOut = box.Checked,
+                SmallBlind = smallBlind,
+                StartingChips = startingChips,
+                Players = players
+            });
+        }
+
+        /// <summary>
+        /// Triggered when a key is pressed while in the console
+        /// Handles keyboard controls for the console
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ConsoleInputKeyDown(object sender, KeyEventArgs e) {
+
+            //If the string isn't blank and enter is pressed, send the command to the console
+            if (e.KeyCode == Keys.Enter) {
+                if (ConsoleInput.Text.Length > 0) {
+                    Console.SendCommand(ConsoleInput.Text);
+                    Console.previousCommands.Insert(0, ConsoleInput.Text);
+                    ConsoleInput.Text = "";
+                    Console.currentCommand = -1;
+                }
+            }
+
+            //If up is pressed, shift one command up
+            else if (e.KeyCode == Keys.Up) {
+                if (Console.currentCommand != Console.previousCommands.Count - 1) {
+                    Console.currentCommand++;
+                    ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
+                }
+            }
+
+            //Else if down is pressed, shift one command back
+            else if (e.KeyCode == Keys.Down) {
+                if (Console.currentCommand <= 0) {
+                    Console.currentCommand = -1;
+                    ConsoleInput.Text = "";
+                    return;
+                }
+
+                Console.currentCommand--;
+                ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
+            }
+        }
+
+        /// <summary>
+        /// Triggers when the send button is pressed on the console
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ConsoleSendClick(object sender, EventArgs e) {
+            ConsoleInputKeyDown(sender, new KeyEventArgs(Keys.Enter));
+        }
+
+        /// <summary>
+        /// Triggers when the console text is changed
+        /// Scrolls the console to the bottom
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void ConsoleTextChanged(object sender, EventArgs e) {
+            RichConsoleText.SelectionStart = RichConsoleText.Text.Length;
+            RichConsoleText.ScrollToCaret();
         }
 
         /// <summary>
@@ -136,9 +313,7 @@ namespace PokerNeuralNetwork {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void ChipsValueChanged(object sender, EventArgs e) {
-            //Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            //config.AppSettings.Settings["chipValue"].Value = (int)ChipsValue.Value;
-            //Console.WriteLine("Chips changed to " + Data.chipSize);
+            StartingChips = (int)ChipsValue.Value;
         }
 
         /// <summary>
@@ -147,8 +322,16 @@ namespace PokerNeuralNetwork {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void SBValueChanged(object sender, EventArgs e) {
-            smallBlind = (int)SBValue.Value;
-            Console.WriteLine("SB changed to " + smallBlind);
+            SmallBlind = (int)SBValue.Value;
+        }
+
+        /// <summary>
+        /// Triggered when the "Players" numeric up/down is changed
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void PlayersValueChanged(object sender, EventArgs e) {
+            Players = (int)PlayersValue.Value;
         }
 
         /// <summary>
@@ -208,14 +391,7 @@ namespace PokerNeuralNetwork {
             e.Graphics.DrawImage(bmp, 5f, 2.5f, 25, 25);
         }
 
-        /// <summary>
-        /// Triggers when the send button is pressed on the console
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ConsoleSendClick(object sender, EventArgs e) {
-            ConsoleInputKeyDown(sender, new KeyEventArgs(Keys.Enter));
-        }
+
 
         /// <summary>
         /// Triggers when the send button is pressed on the console
@@ -227,8 +403,7 @@ namespace PokerNeuralNetwork {
             int players = 6;
 
             //Hide start button
-            NewGameButton.Enabled = false;
-            NewGameButton.Visible = false;
+            StartHoldemButton.Enabled = false;
 
             TableLayoutPanel[] panels = new TableLayoutPanel[players + 1];
 
@@ -240,96 +415,39 @@ namespace PokerNeuralNetwork {
             panels[5] = PlayerLayout5;
             panels[6] = MiddlePanel;
 
-            //Start game in new thread
-            CreateNewGame();
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            for (int i = 0; i < 1000; i++) {
+                CreateNewGame();
+            }
+            timer.Stop();
+            Console.WriteLine(timer.ElapsedTicks);
         }
 
+        /// <summary>
+        /// Create a new Poker
+        /// </summary>
         private void CreateNewGame() {
-
-            bool gameStarted = false;
-            foreach (Poker.Holdem game in pokerGames) {
-                if (game.finished) {
-                    game.NewGame(10, 1500);
-                    gameStarted = true;
-                    break;
-                }
-            }
-
-            if (!gameStarted) {
-                Poker.Holdem game = new Poker.Holdem(6);
-                pokerGames.Add(game);
-                game.NewGame(10, 1500);
-            }
+            ThreadPool.QueueUserWorkItem(new WaitCallback(delegate (object state) {
+                Holdem game = new Holdem(tableIDs++, rng.Next());
+                game.NewGame(players, smallBlind, startingChips);
+            }));
         }
 
-        /// <summary>
-        /// Triggered when a key is pressed while in the console
-        /// Handles keyboard controls for the console
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ConsoleInputKeyDown(object sender, KeyEventArgs e) {
-
-            //If the string isn't blank and enter is pressed, send the command to the console
-            if (e.KeyCode == Keys.Enter) {
-                if (ConsoleInput.Text.Length > 0) {
-                    Console.SendCommand(ConsoleInput.Text);
-                    Console.previousCommands.Insert(0, ConsoleInput.Text);
-                    ConsoleInput.Text = "";
-                    Console.currentCommand = -1;
-                }
-            }
-
-            //If up is pressed, shift one command up
-            else if (e.KeyCode == Keys.Up) {
-                if (Console.currentCommand != Console.previousCommands.Count - 1) {
-                    Console.currentCommand++;
-                    ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
-                }
-            }
-
-            //Else if down is pressed, shift one command back
-            else if (e.KeyCode == Keys.Down) {
-                if (Console.currentCommand <= 0) {
-                    Console.currentCommand = -1;
-                    ConsoleInput.Text = "";
-                    return;
-                }
-
-                Console.currentCommand--;
-                ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
-            }
-        }
-
-        /// <summary>
-        /// Toggles whether the tabs are enabled, given foundGame
-        /// </summary>
-        private void ToggleTabs() {
-            //If the active tab isn't the Debugging tab or the Main tab, set the active tab to the Main tab
-            if (MainTabControl.SelectedTab != GameTab && MainTabControl.SelectedTab != DebuggingTab) {
-                MainTabControl.ForceTabSwitch(GameTab);
-            }
-
-            MainTabControl.Refresh();
-        }
-
-        /// <summary>
-        /// Disables the window and sets the current hotkey that we're updating
-        /// </summary>
-        /// <param name="index">Index of the hotkey that's being changed</param>
-        public void SetHotkey(int index) {
-            //Disables the window until the hotkey is set
-            using (var form = new PressAnyKeyBox(index)) {
-                form.StartPosition = FormStartPosition.CenterParent;
-                form.ShowDialog();
-            }
-        }
+        delegate void ConsoleMessageCallback(string text, Color color);
 
         public static void ConsoleMessage(string text, Color color) {
             if (form != null) {
-                form.RichConsoleText.SelectionColor = color;
-                form.RichConsoleText.AppendText(text);
-                SendMessage(form.Handle, WM_VSCROLL, (IntPtr)SB_BOTTOM, IntPtr.Zero);
+                ConsoleForm.ConsoleMessage(text, color);
+
+                if (form.RichConsoleText.InvokeRequired) {
+                    ConsoleMessageCallback d = new ConsoleMessageCallback(ConsoleMessage);
+                    form.Invoke(d, new object[] { text, color });
+                } else {
+                    form.RichConsoleText.SelectionColor = color;
+                    form.RichConsoleText.AppendText(text);
+                    //SendMessage(form.Handle, WM_VSCROLL, (IntPtr)SB_BOTTOM, IntPtr.Zero);
+                }
             }
         }
 

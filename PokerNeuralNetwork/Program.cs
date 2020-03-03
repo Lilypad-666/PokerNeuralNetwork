@@ -13,12 +13,12 @@ namespace PokerNeuralNetwork {
 
             //If debugging
             if (args.Length > 0 && args[0].Equals("1")) {
-                MainForm.debug = true;
+                MainForm.Debug = true;
 
                 //Show the console window
                 ShowConsoleWindow();
             } else {
-                MainForm.debug = false;
+                MainForm.Debug = false;
 
                 //UI Excepitons
                 Application.ThreadException += new ThreadExceptionEventHandler(Console.ThreadException);
