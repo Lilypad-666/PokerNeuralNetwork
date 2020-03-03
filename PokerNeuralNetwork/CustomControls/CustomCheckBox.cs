@@ -459,7 +459,7 @@ namespace PokerNeuralNetwork {
         /// <param name="b">Image to rotate</param>
         /// <param name="angle">Angle in degrees to rotate the image</param>
         /// <returns>The rotated bitmap</returns>
-        public static Bitmap RotateImage(Bitmap b, float angle) {
+        private Bitmap RotateImage(Bitmap b, float angle) {
             //Create a new empty bitmap to hold rotated image
             Bitmap returnBitmap = new Bitmap(b.Width, b.Height);
             //Make a graphics object from the empty bitmap

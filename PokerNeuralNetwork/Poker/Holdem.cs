@@ -251,7 +251,6 @@ namespace PokerNeuralNetwork.Poker {
                 //Run through each hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {
                     int playerID = pair.Key;
-                    List<int> hand = pair.Value;
 
                     //Everyone splits pot
                     winners.Push(playerID);
@@ -286,7 +285,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //Four of a Kind
             else if (highestRank == 7) {
-                List<int> winnerHighCards = new List<int>(5);
+                List<int> winnerHighCards = new List<int>(new int[5]);
 
                 //Run through every hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {
@@ -323,7 +322,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //Full House
             else if (highestRank == 6) {
-                List<int> winnerHighCards = new List<int>(5);
+                List<int> winnerHighCards = new List<int>(new int[5]);
 
                 //Run through every hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {
@@ -360,7 +359,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //High Card/Flush
             else if (highestRank == 0 || highestRank == 5) {
-                List<int> winnerHighCards = new List<int>(5);
+                List<int> winnerHighCards = new List<int>(new int[5]);
 
                 //Run through each hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {
@@ -396,7 +395,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //Three of a Kind/Two Pair
             else if (highestRank == 2 || highestRank == 3) {
-                List<int> winnerHighCards = new List<int>(5);
+                List<int> winnerHighCards = new List<int>(new int[5]);
 
                 //Run through each hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {
@@ -459,7 +458,7 @@ namespace PokerNeuralNetwork.Poker {
 
             //One Pair
             else if (highestRank == 1) {
-                List<int> winnerHighCards = new List<int>(5);
+                List<int> winnerHighCards = new List<int>(new int[5]);
 
                 //Run through each hand
                 foreach (KeyValuePair<int, List<int>> pair in highCards) {

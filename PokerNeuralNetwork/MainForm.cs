@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace PokerNeuralNetwork {
@@ -15,13 +14,25 @@ namespace PokerNeuralNetwork {
     /// </summary>
     public partial class MainForm : Form {
 
+        /// <summary>
+        /// Whether we're in debug mode or not
+        /// </summary>
+        public static bool debug;
 
         /// <summary>
-        /// Timer that runs to ensure that the game is still running and valid
+        /// A reference to the main form if it's loaded
         /// </summary>
-        private Timer updateTimer;
+        private static MainForm form = null;
 
-        public static bool loaded = false;
+        /// <summary>
+        /// Amount of chips for small blind
+        /// </summary>
+        private int smallBlind = 10;
+
+        /// <summary>
+        /// List of all the poker games
+        /// </summary>
+        private List<Poker.Holdem> pokerGames = new List<Poker.Holdem>(0);
 
         /// <summary>
         /// Creates the main form
@@ -29,14 +40,14 @@ namespace PokerNeuralNetwork {
         public MainForm() {
             InitializeComponent();
 
-            Data.form = this;
+            form = this;
 
             //Creates the Data and log directories
             Directory.CreateDirectory("Data");
             Directory.CreateDirectory("Logs");
 
             //Doesn't allow resizing or maximizing of the window
-            if (!Info.debug) {
+            if (!debug) {
                 FormBorderStyle = FormBorderStyle.None;
             }
 
@@ -45,23 +56,18 @@ namespace PokerNeuralNetwork {
             //Lets the program see keys even when it's not focused (for hotkeys)
             KeyPreview = true;
 
-            //Crates a new HookedWindow
-            Data.window = new HookedWindow();
-
             //Disables all the tabs
             ToggleTabs();
 
             //Gets the version number
-            Info.version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            string version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
             //Adds the version number to the title
-            Text += Info.version;
-            TitleLabel.Text += Info.version;
+            Text += version;
+            TitleLabel.Text += version;
 
             //Adds events for others
             Load += new EventHandler(FormLoaded);
-
-            Functions.LoadData();
         }
 
         /// <summary>
@@ -71,11 +77,6 @@ namespace PokerNeuralNetwork {
         /// <param name="e"></param>
         private void FormLoaded(object sender, EventArgs e) {
 
-            loaded = true;
-
-            //Start the timer once the form is loaded
-            InitTimer();
-
             //Set the current tab as the first one
             MainTabControl.SelectedTab = GameTab;
 
@@ -84,7 +85,7 @@ namespace PokerNeuralNetwork {
             GitHubLink.LinkClicked += new LinkLabelLinkClickedEventHandler(LinkClicked);
 
             //Update the version label to include the current version number
-            VersionNumberLabel.Text = Info.version;
+            VersionNumberLabel.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
             //Set the paint handler for adding images to the background
             DebuggingInfoPanel.Paint += new PaintEventHandler(InfoTabPaint);
@@ -92,16 +93,9 @@ namespace PokerNeuralNetwork {
             //Set the paint handler for adding images to the title bar
             TitleBarPanel.Paint += new PaintEventHandler(TitleBarPaint);
 
-            //Call event when the text is changed in the process name field
-            //ProcessName.TextChanged += new EventHandler(ProcessTextChanged);
-
             //Call event when a key is pressed in the console input to check for an Enter or Arrow key
             ConsoleInput.KeyDown += new KeyEventHandler(ConsoleInputKeyDown);
             ConsoleSendButton.Click += new EventHandler(ConsoleSendClick);
-
-            //Update the two delays
-            //SearchDelayInput.ValueChanged += new EventHandler(DelayInputValueChanged);
-            //UpdateDelayInput.ValueChanged += new EventHandler(DelayInputValueChanged);
 
             //Lets you drag around the window without a windows title bar
             TitleBarPanel.MouseDown += new MouseEventHandler(TitleBar);
@@ -114,8 +108,26 @@ namespace PokerNeuralNetwork {
             //Play new game
             NewGameButton.Click += new EventHandler(StartNewGame);
 
+            DrawCheckBox.Cursor = Cursors.Default;
+            DrawCheckBox.Loaded();
+            DrawCheckBox.Click += CheckboxToggle;
+
+            SBText.Cursor = Cursors.IBeam;
+            ChipsText.Cursor = Cursors.IBeam;
+
             ExitButton.InitializeButton();
             MinimizeButton.InitializeButton();
+        }
+
+        /// <summary>
+        /// Triggers when a checkbox is toggled
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void CheckboxToggle(object sender, EventArgs e) {
+            //On checkbox toggle, save to the config
+            CustomCheckBox box = (sender as CustomCheckBox);
+            box.StartRotate();
         }
 
         /// <summary>
@@ -135,8 +147,8 @@ namespace PokerNeuralNetwork {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void SBValueChanged(object sender, EventArgs e) {
-            Data.smallBlind = (int)SBValue.Value;
-            Console.WriteLine("SB changed to " + Data.smallBlind);
+            smallBlind = (int)SBValue.Value;
+            Console.WriteLine("SB changed to " + smallBlind);
         }
 
         /// <summary>
@@ -147,31 +159,8 @@ namespace PokerNeuralNetwork {
         private void TitleBar(object sender, MouseEventArgs e) {
             if (e.Button == MouseButtons.Left) {
                 ReleaseCapture();
-                SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                SendMessage(Handle, WM_NCLBUTTONDOWN, (IntPtr)HT_CAPTION, IntPtr.Zero);
             }
-        }
-
-        /// <summary>
-        /// Triggers when the vaule of either delay inputs are changed
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DelayInputValueChanged(object sender, EventArgs e) {
-            NumericUpDown input = sender as NumericUpDown;
-
-            if (input.Name.Contains("Search")) {
-                Info.searchDelay = decimal.ToInt32(input.Value);
-
-                Data.settings[1] = Info.searchDelay;
-            }
-
-            if (input.Name.Contains("Update")) {
-                Info.updateDelay = decimal.ToInt32(input.Value);
-                Data.settings[2] = Info.updateDelay;
-            }
-
-            Data.Save("settings.dat", Data.settings);
-            UpdateTimerDelay();
         }
 
         /// <summary>
@@ -183,34 +172,6 @@ namespace PokerNeuralNetwork {
             LinkLabel link = sender as LinkLabel;
 
             Process.Start(link.Links[0].LinkData.ToString());
-        }
-
-        /// <summary>
-        /// Triggers when the processing text box gets changed
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ProcessTextChanged(object sender, EventArgs e) {
-            TextBox box = sender as TextBox;
-
-            //Make the text lower case
-            box.Text = box.Text.ToLower();
-
-            //Store the text into settings
-            Data.settings[0] = box.Text;
-
-            //Save the new process to file
-            Data.Save("settings.dat", Data.settings);
-
-            //Clear the current window and reset everything
-            Data.window.Clear();
-            RestoreWindowInfoDefault();
-            Info.foundGame = false;
-            Info.isFocusedWindow = false;
-
-            UpdateTimerDelay();
-
-            ToggleTabs();
         }
 
         /// <summary>
@@ -245,30 +206,6 @@ namespace PokerNeuralNetwork {
             Bitmap bmp = new Bitmap(myStream);
 
             e.Graphics.DrawImage(bmp, 5f, 2.5f, 25, 25);
-        }
-
-        /// <summary>
-        /// Runs every Data.timerDelay ms, verifies that our program is still running and searches for it if it isn't
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void UpdateTimerTick(object sender, EventArgs e) {
-
-            //When the timer ticks, update the window's location
-            UpdateHookedWindow();
-
-            Info.isFocusedWindow = Data.window.IsFocusedWindow();
-        }
-
-        /// <summary>
-        /// Triggers when the change hotkey button is pressed
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void HotkeyButtonClick(object sender, EventArgs e) {
-            Button button = sender as Button;
-            //Get the index from the regex \d+, which grabs the number at the end of the string
-            SetHotkey(int.Parse(Regex.Match(button.Name, @"\d+").Value));
         }
 
         /// <summary>
@@ -310,7 +247,7 @@ namespace PokerNeuralNetwork {
         private void CreateNewGame() {
 
             bool gameStarted = false;
-            foreach (Poker.Holdem game in Data.games) {
+            foreach (Poker.Holdem game in pokerGames) {
                 if (game.finished) {
                     game.NewGame(10, 1500);
                     gameStarted = true;
@@ -320,7 +257,7 @@ namespace PokerNeuralNetwork {
 
             if (!gameStarted) {
                 Poker.Holdem game = new Poker.Holdem(6);
-                Data.games.Add(game);
+                pokerGames.Add(game);
                 game.NewGame(10, 1500);
             }
         }
@@ -332,82 +269,36 @@ namespace PokerNeuralNetwork {
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void ConsoleInputKeyDown(object sender, KeyEventArgs e) {
-            Properties.Settings settings = Properties.Settings.Default;
 
             //If the string isn't blank and enter is pressed, send the command to the console
             if (e.KeyCode == Keys.Enter) {
                 if (ConsoleInput.Text.Length > 0) {
                     Console.SendCommand(ConsoleInput.Text);
-                    Data.previousCommands.Insert(0, ConsoleInput.Text);
+                    Console.previousCommands.Insert(0, ConsoleInput.Text);
                     ConsoleInput.Text = "";
-                    settings.currentCommand = -1;
+                    Console.currentCommand = -1;
                 }
             }
 
             //If up is pressed, shift one command up
             else if (e.KeyCode == Keys.Up) {
-                if (settings.currentCommand != Data.previousCommands.Count - 1) {
-                    settings.currentCommand++;
-                    ConsoleInput.Text = Data.previousCommands[settings.currentCommand];
+                if (Console.currentCommand != Console.previousCommands.Count - 1) {
+                    Console.currentCommand++;
+                    ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
                 }
             }
 
             //Else if down is pressed, shift one command back
             else if (e.KeyCode == Keys.Down) {
-                if (settings.currentCommand <= 0) {
-                    settings.currentCommand = -1;
+                if (Console.currentCommand <= 0) {
+                    Console.currentCommand = -1;
                     ConsoleInput.Text = "";
                     return;
                 }
 
-                settings.currentCommand--;
-                ConsoleInput.Text = Data.previousCommands[settings.currentCommand];
+                Console.currentCommand--;
+                ConsoleInput.Text = Console.previousCommands[Console.currentCommand];
             }
-        }
-
-        /// <summary>
-        /// Updates the timer to the correct delay
-        /// </summary>
-        public void UpdateTimerDelay() {
-            if (updateTimer != null) {
-                //If we are in the game
-                if (Info.foundGame) {
-                    //Verify that the current delay is the update delay
-                    if (Info.currentDelay != Info.updateDelay) {
-                        //If it isn't set the interval to be the update delay
-                        Info.currentDelay = Info.updateDelay;
-                        updateTimer.Stop();
-                        updateTimer.Interval = Info.updateDelay;
-                        updateTimer.Start();
-
-                        //Print out that we changed the delay
-                        Console.WriteLine("Changed current delay to " + Info.currentDelay + "ms.");
-                    }
-                } else {
-                    //Verify that the current delay is the search delay
-                    if (Info.currentDelay != Info.searchDelay) {
-                        //If it isn't, set the interval to be the search delay
-                        Info.currentDelay = Info.searchDelay;
-                        updateTimer.Stop();
-                        updateTimer.Interval = Info.searchDelay;
-                        updateTimer.Start();
-
-                        //Print out that we changed the delay
-                        Console.WriteLine("Changed current delay to " + Info.currentDelay + "ms.");
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Starts the timer for the update
-        /// </summary>
-        private void InitTimer() {
-            //Creates a timer on a x ms interval
-            updateTimer = new System.Windows.Forms.Timer();
-            updateTimer.Tick += new EventHandler(UpdateTimerTick);
-            updateTimer.Interval = Info.searchDelay;
-            updateTimer.Start();
         }
 
         /// <summary>
@@ -423,17 +314,6 @@ namespace PokerNeuralNetwork {
         }
 
         /// <summary>
-        /// Restores the window info back to N/A and Not Found.
-        /// </summary>
-        private void RestoreWindowInfoDefault() {
-            WindowXBox.Text = "N/A";
-            WindowYBox.Text = "N/A";
-            WindowWidthBox.Text = "N/A";
-            WindowHeightBox.Text = "N/A";
-            //ProgramProcess.Text = "Not Found...";
-        }
-
-        /// <summary>
         /// Disables the window and sets the current hotkey that we're updating
         /// </summary>
         /// <param name="index">Index of the hotkey that's being changed</param>
@@ -445,184 +325,23 @@ namespace PokerNeuralNetwork {
             }
         }
 
-        /// <summary>
-        /// Verifies that the window is a valid process, and attempts to find the valid process if it isn't
-        /// Handles the text box/ui side of it
-        /// </summary>
-        private void UpdateHookedWindow() {
-            //If the window is no longer a valid process
-            if (!Data.window.ValidprogramProcess()) {
-                //Try to find the new program window
-                if (Data.window.FindprogramProcess()) {
-                    //If the process is found but the window handle isn't, don't enable anything
-                    if (Data.window.GetWindowName() == "") {
-                        Info.foundGame = false;
-                        Info.isFocusedWindow = false;
-                        return;
-                    }
-
-                    //If found, set the text and enable the panels and tabs
-                    //ProgramProcess.Text = Data.window.GetWindowName();
-
-                    Info.foundGame = true;
-                    Info.toggleTabs = true;
-
-                    Console.WriteLine("Found window: " + Data.window.GetWindowName());
-
-                    //Verify that the delay is at the updateDelay speed
-                    UpdateTimerDelay();
-                } else {
-                    RestoreWindowInfoDefault();
-
-                    Info.foundGame = false;
-                    Info.toggleTabs = true;
-                    Info.isFocusedWindow = false;
-
-                    //Verify that the delay is at the searchDelay speed
-                    UpdateTimerDelay();
-                }
-            } else {
-                //The window is still a valid process, so verify that the Data.window's dimensions are correct
-                //We don't care about x and y because the clicks are all relative
-                Data.window.UpdateWindowRect();
-
-                //Update the given info on the screen
-                WindowXBox.Text = Data.window.GetX().ToString();
-                WindowYBox.Text = Data.window.GetY().ToString();
-                WindowWidthBox.Text = Data.window.GetWidth().ToString();
-                WindowHeightBox.Text = Data.window.GetHeight().ToString();
+        public static void ConsoleMessage(string text, Color color) {
+            if (form != null) {
+                form.RichConsoleText.SelectionColor = color;
+                form.RichConsoleText.AppendText(text);
+                SendMessage(form.Handle, WM_VSCROLL, (IntPtr)SB_BOTTOM, IntPtr.Zero);
             }
         }
 
-        /// <summary>
-        /// Creates a new tab in the tabControl from the uc template.
-        /// </summary>
-        /// <param name="tabControl">Name of the tabControl to add the tab to</param>
-        /// <param name="uc">Template to copy over to the new tab</param>
-        /// <param name="index">Index of the new tab</param>
-        /// <returns></returns>
-        public static TabPage CreateTab(CustomTabControl tc, CustomUserControl template, int index) {
-            //Creates an "adjusted index" based on the index (0-7) and the offset
-            int adjustedIndex = index + template.offset;
-
-            TabPage tp = new TabPage();
-
-            template.Name += (index + 1);
-
-            //Copy all the Data from the template to the new tab
-            tp.Controls.Add(template);
-
-            //Sets the text and name
-            tp.Text = "Script " + (index + 1);
-            tp.Name = "Script" + adjustedIndex;
-
-            //Allows 7 tabs (0-6) of any given type
-            if (index >= 6) {
-                if (template is UserControl) {
-                    Button button = FindControl<Button>(tp, "AddScript");
-                    button.Enabled = false;
-                    button.BackColor = Color.Gray;
-                }
-            }
-
-            //Adds the tab to the tab control
-            tc.TabPages.Add(tp);
-
-            //Sets the tab as the currently active tab
-            tc.ForceTabSwitch(tp);
-
-            Console.WriteLine("Successfully created tab index " + adjustedIndex);
-
-            return tp;
-        }
-
-        /// <summary>
-        /// Recursively finds the first child of the given name
-        /// Includes children of children
-        /// </summary>
-        /// <param name="root">Control to be the top parent</param>
-        /// <param name="name">Name to search for</param>
-        /// <param name="childrenOfChildren">Whether to recursively search or not</param>
-        /// <returns>The first instance found of T with name</returns>
-        public static T FindControl<T>(Control root, string name, bool childrenOfChildren = true) where T : Control {
-
-            //If root's name matches, return it
-            if (root is T && root.Name.Equals(name)) {
-                return (root as T);
-            }
-
-            //Run through each child in this root's controls
-            foreach (Control c in root.Controls) {
-                if (childrenOfChildren) {
-                    //Recursively call the function on each child
-                    T t = FindControl<T>(c, name);
-
-                    //If we found a match, return it
-                    if (t != null) {
-                        return t;
-                    }
-                } else {
-                    //If the name matches, return it
-                    if (c is T && c.Name.Equals(name)) {
-                        return (c as T);
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Recursively finds all children who's names contain the given name
-        /// </summary>
-        /// <param name="root">Control to be the top parent</param>
-        /// <param name="name">Name to search for</param>
-        /// <param name="childrenOfChildren">Whether to recursively search or not</param>
-        /// <returns>A list of all instances of T who's name contain name</returns>
-        public static List<T> FindControls<T>(Control root, string name = "", bool childrenOfChildren = true) where T : Control {
-
-            List<T> list = new List<T>();
-
-            //If root's name contains, add it to the list
-            if (root is T && root.Name.Contains(name)) {
-                list.Add(root as T);
-            }
-
-            //Run through each child in this root's controls
-            foreach (Control c in root.Controls) {
-                if (childrenOfChildren) {
-                    //Recursively call the function on each child
-                    list.AddRange(FindControls<T>(c, name));
-                } else {
-                    //If the name matches, return it
-                    if (c is T && c.Name.Contains(name)) {
-                        list.Add(c as T);
-                    }
-                }
-            }
-
-            return list;
-        }
-
-        public static void SetConsoleLogColor(Color color) {
-
-        }
-
-        public static void ConsoleAppendText(string text) {
-
-        }
-
-        public static IntPtr ConsoleHandle() {
-            
-        }
-
-        public const int WM_NCLBUTTONDOWN = 0xA1;
-        public const int HT_CAPTION = 0x2;
+        private const int WM_NCLBUTTONDOWN = 0xA1;
+        private const int HT_CAPTION = 0x2;
+        private const int WM_VSCROLL = 0x115;
+        private const int SB_BOTTOM = 7;
 
         [System.Runtime.InteropServices.DllImportAttribute("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+        private static extern int SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
 
         [System.Runtime.InteropServices.DllImportAttribute("user32.dll")]
-        public static extern bool ReleaseCapture();
+        private static extern bool ReleaseCapture();
     }
 }

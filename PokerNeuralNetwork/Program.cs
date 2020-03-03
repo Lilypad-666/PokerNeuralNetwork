@@ -13,12 +13,12 @@ namespace PokerNeuralNetwork {
 
             //If debugging
             if (args.Length > 0 && args[0].Equals("1")) {
-                Info.debug = true;
+                MainForm.debug = true;
 
                 //Show the console window
                 ShowConsoleWindow();
             } else {
-                Info.debug = false;
+                MainForm.debug = false;
 
                 //UI Excepitons
                 Application.ThreadException += new ThreadExceptionEventHandler(Console.ThreadException);
@@ -39,7 +39,7 @@ namespace PokerNeuralNetwork {
         /// <summary>
         /// Shows the console window for debug
         /// </summary>
-        public static void ShowConsoleWindow() {
+        private static void ShowConsoleWindow() {
             var handle = GetConsoleWindow();
 
             if (handle == IntPtr.Zero) {
@@ -49,24 +49,16 @@ namespace PokerNeuralNetwork {
             }
         }
 
-        /// <summary>
-        /// Hides the console window
-        /// </summary>
-        public static void HideConsoleWindow() {
-            var handle = GetConsoleWindow();
-            ShowWindow(handle, SW_HIDE);
-        }
-
         [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool AllocConsole();
+        private static extern bool AllocConsole();
 
         [DllImport("kernel32.dll")]
-        static extern IntPtr GetConsoleWindow();
+        private static extern IntPtr GetConsoleWindow();
 
         [DllImport("user32.dll")]
-        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-        const int SW_HIDE = 0;
-        const int SW_SHOW = 5;
+        private const int SW_HIDE = 0;
+        private const int SW_SHOW = 5;
     }
 }

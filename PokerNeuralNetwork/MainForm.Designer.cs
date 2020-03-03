@@ -36,8 +36,6 @@ namespace PokerNeuralNetwork
             this.MinimizeButton = new PokerNeuralNetwork.TitleBarButton();
             this.ExitButton = new PokerNeuralNetwork.TitleBarButton();
             this.ToolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.label8 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
             this.GameInfoPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.WindowInfoLabel = new System.Windows.Forms.Label();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
@@ -68,17 +66,6 @@ namespace PokerNeuralNetwork
             this.DebuggingInfoPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.TempTab = new System.Windows.Forms.TabPage();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.customButton2 = new PokerNeuralNetwork.CustomButton();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
-            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.GameTab = new System.Windows.Forms.TabPage();
             this.panel4 = new System.Windows.Forms.Panel();
             this.PlayLayout = new System.Windows.Forms.TableLayoutPanel();
@@ -142,12 +129,6 @@ namespace PokerNeuralNetwork
             this.DebuggingInfoPanel.SuspendLayout();
             this.DebuggingInfoPanel2.SuspendLayout();
             this.DebuggingInfoPanel1.SuspendLayout();
-            this.TempTab.SuspendLayout();
-            this.panel1.SuspendLayout();
-            this.tableLayoutPanel2.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             this.GameTab.SuspendLayout();
             this.panel4.SuspendLayout();
             this.PlayLayout.SuspendLayout();
@@ -213,34 +194,6 @@ namespace PokerNeuralNetwork
             this.ExitButton.Size = new System.Drawing.Size(55, 30);
             this.ExitButton.TabIndex = 27;
             this.ExitButton.UseVisualStyleBackColor = false;
-            // 
-            // label8
-            // 
-            this.label8.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.label8.AutoSize = true;
-            this.label8.BackColor = System.Drawing.Color.Transparent;
-            this.label8.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.ForeColor = System.Drawing.Color.White;
-            this.label8.Location = new System.Drawing.Point(98, 126);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(115, 17);
-            this.label8.TabIndex = 21;
-            this.label8.Text = "Search Delay (ms):";
-            this.ToolTip.SetToolTip(this.label8, "Delay in milliseconds to re-search for the program when it is not found.");
-            // 
-            // label7
-            // 
-            this.label7.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.label7.AutoSize = true;
-            this.label7.BackColor = System.Drawing.Color.Transparent;
-            this.label7.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.ForeColor = System.Drawing.Color.White;
-            this.label7.Location = new System.Drawing.Point(304, 126);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(119, 17);
-            this.label7.TabIndex = 23;
-            this.label7.Text = "Update Delay (ms):";
-            this.ToolTip.SetToolTip(this.label7, "Delay is milliseconds to update the game data when the game is found.");
             // 
             // GameInfoPanel1
             // 
@@ -638,193 +591,6 @@ namespace PokerNeuralNetwork
             this.label2.Size = new System.Drawing.Size(99, 21);
             this.label2.TabIndex = 14;
             this.label2.Text = "immediately.";
-            // 
-            // TempTab
-            // 
-            this.TempTab.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(21)))), ((int)(((byte)(105)))), ((int)(((byte)(199)))));
-            this.TempTab.Controls.Add(this.panel1);
-            this.TempTab.Location = new System.Drawing.Point(4, 32);
-            this.TempTab.Name = "TempTab";
-            this.TempTab.Size = new System.Drawing.Size(972, 724);
-            this.TempTab.TabIndex = 7;
-            this.TempTab.Text = "TEMP";
-            // 
-            // panel1
-            // 
-            this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(28)))));
-            this.panel1.Controls.Add(this.tableLayoutPanel2);
-            this.panel1.Controls.Add(this.tableLayoutPanel3);
-            this.panel1.Location = new System.Drawing.Point(-2, -2);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(980, 760);
-            this.panel1.TabIndex = 28;
-            // 
-            // tableLayoutPanel2
-            // 
-            this.tableLayoutPanel2.ColumnCount = 3;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel2.Controls.Add(this.customButton2, 1, 0);
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 321);
-            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 1;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(522, 100);
-            this.tableLayoutPanel2.TabIndex = 28;
-            // 
-            // customButton2
-            // 
-            this.customButton2.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.customButton2.Location = new System.Drawing.Point(195, 30);
-            this.customButton2.Name = "customButton2";
-            this.customButton2.Size = new System.Drawing.Size(132, 40);
-            this.customButton2.TabIndex = 0;
-            this.customButton2.Text = "Neural Network";
-            this.customButton2.UseVisualStyleBackColor = true;
-            // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 4;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 10F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 10F));
-            this.tableLayoutPanel3.Controls.Add(this.textBox1, 2, 2);
-            this.tableLayoutPanel3.Controls.Add(this.label1, 2, 1);
-            this.tableLayoutPanel3.Controls.Add(this.textBox2, 1, 2);
-            this.tableLayoutPanel3.Controls.Add(this.label6, 1, 1);
-            this.tableLayoutPanel3.Controls.Add(this.numericUpDown1, 2, 5);
-            this.tableLayoutPanel3.Controls.Add(this.label7, 2, 4);
-            this.tableLayoutPanel3.Controls.Add(this.label8, 1, 4);
-            this.tableLayoutPanel3.Controls.Add(this.numericUpDown2, 1, 5);
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 8);
-            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 7;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 60F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(522, 202);
-            this.tableLayoutPanel3.TabIndex = 27;
-            // 
-            // textBox1
-            // 
-            this.textBox1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.textBox1.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox1.Location = new System.Drawing.Point(289, 76);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(150, 25);
-            this.textBox1.TabIndex = 4;
-            this.textBox1.Text = "program";
-            this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // label1
-            // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.label1.AutoSize = true;
-            this.label1.BackColor = System.Drawing.Color.Transparent;
-            this.label1.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.ForeColor = System.Drawing.Color.White;
-            this.label1.Location = new System.Drawing.Point(316, 50);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(95, 17);
-            this.label1.TabIndex = 5;
-            this.label1.Text = "Process Name:";
-            // 
-            // textBox2
-            // 
-            this.textBox2.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.textBox2.BackColor = System.Drawing.Color.Gray;
-            this.textBox2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBox2.Cursor = System.Windows.Forms.Cursors.Default;
-            this.textBox2.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox2.Location = new System.Drawing.Point(81, 76);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.ReadOnly = true;
-            this.textBox2.Size = new System.Drawing.Size(150, 25);
-            this.textBox2.TabIndex = 1;
-            this.textBox2.Text = "Not Found...";
-            this.textBox2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // label6
-            // 
-            this.label6.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.label6.AutoSize = true;
-            this.label6.BackColor = System.Drawing.Color.Transparent;
-            this.label6.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.ForeColor = System.Drawing.Color.White;
-            this.label6.Location = new System.Drawing.Point(105, 50);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(102, 17);
-            this.label6.TabIndex = 0;
-            this.label6.Text = "Program Found:";
-            // 
-            // numericUpDown1
-            // 
-            this.numericUpDown1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.numericUpDown1.BackColor = System.Drawing.SystemColors.Control;
-            this.numericUpDown1.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.numericUpDown1.Increment = new decimal(new int[] {
-            50,
-            0,
-            0,
-            0});
-            this.numericUpDown1.Location = new System.Drawing.Point(289, 152);
-            this.numericUpDown1.Maximum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            0});
-            this.numericUpDown1.Minimum = new decimal(new int[] {
-            50,
-            0,
-            0,
-            0});
-            this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(150, 25);
-            this.numericUpDown1.TabIndex = 24;
-            this.numericUpDown1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.numericUpDown1.Value = new decimal(new int[] {
-            250,
-            0,
-            0,
-            0});
-            // 
-            // numericUpDown2
-            // 
-            this.numericUpDown2.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.numericUpDown2.BackColor = System.Drawing.SystemColors.Control;
-            this.numericUpDown2.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.numericUpDown2.Increment = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            this.numericUpDown2.Location = new System.Drawing.Point(81, 152);
-            this.numericUpDown2.Maximum = new decimal(new int[] {
-            10000,
-            0,
-            0,
-            0});
-            this.numericUpDown2.Minimum = new decimal(new int[] {
-            100,
-            0,
-            0,
-            0});
-            this.numericUpDown2.Name = "numericUpDown2";
-            this.numericUpDown2.Size = new System.Drawing.Size(150, 25);
-            this.numericUpDown2.TabIndex = 22;
-            this.numericUpDown2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.numericUpDown2.Value = new decimal(new int[] {
-            2000,
-            0,
-            0,
-            0});
             // 
             // GameTab
             // 
@@ -1289,6 +1055,7 @@ namespace PokerNeuralNetwork
             this.SBValue.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.SBValue.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(28)))));
             this.SBValue.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.SBValue.Cursor = System.Windows.Forms.Cursors.WaitCursor;
             this.SBValue.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.SBValue.ForeColor = System.Drawing.Color.White;
             this.SBValue.Increment = new decimal(new int[] {
@@ -1673,7 +1440,6 @@ namespace PokerNeuralNetwork
             this.MainTabControl.BackTabColor = System.Drawing.Color.FromArgb(((int)(((byte)(21)))), ((int)(((byte)(105)))), ((int)(((byte)(199)))));
             this.MainTabControl.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.MainTabControl.Controls.Add(this.GameTab);
-            this.MainTabControl.Controls.Add(this.TempTab);
             this.MainTabControl.Controls.Add(this.DebuggingTab);
             this.MainTabControl.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
             this.MainTabControl.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -1715,13 +1481,6 @@ namespace PokerNeuralNetwork
             this.DebuggingInfoPanel2.PerformLayout();
             this.DebuggingInfoPanel1.ResumeLayout(false);
             this.DebuggingInfoPanel1.PerformLayout();
-            this.TempTab.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            this.tableLayoutPanel2.ResumeLayout(false);
-            this.tableLayoutPanel3.ResumeLayout(false);
-            this.tableLayoutPanel3.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
             this.GameTab.ResumeLayout(false);
             this.panel4.ResumeLayout(false);
             this.PlayLayout.ResumeLayout(false);
@@ -1781,19 +1540,6 @@ namespace PokerNeuralNetwork
         private System.Windows.Forms.TableLayoutPanel DebuggingInfoPanel1;
         public System.Windows.Forms.Label label3;
         public System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TabPage TempTab;
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private CustomButton customButton2;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
-        public System.Windows.Forms.TextBox textBox1;
-        public System.Windows.Forms.Label label1;
-        public System.Windows.Forms.TextBox textBox2;
-        public System.Windows.Forms.Label label6;
-        public System.Windows.Forms.NumericUpDown numericUpDown1;
-        public System.Windows.Forms.Label label7;
-        public System.Windows.Forms.Label label8;
-        public System.Windows.Forms.NumericUpDown numericUpDown2;
         private System.Windows.Forms.TabPage GameTab;
         private System.Windows.Forms.Panel panel4;
         private System.Windows.Forms.TableLayoutPanel PlayLayout;

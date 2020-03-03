@@ -110,7 +110,7 @@ namespace PokerNeuralNetwork {
             //Minimizes the program
             if (b.Name.Equals("MinimizeButton")) {
                 Console.WriteLine("Minimizing.");
-                Data.form.WindowState = FormWindowState.Minimized;
+                FindForm().WindowState = FormWindowState.Minimized;
             }
         }
 

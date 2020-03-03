@@ -47,10 +47,6 @@ namespace PokerNeuralNetwork.Poker {
             betText = (TextBox)panel.Controls.Find("CurrentBet" + id, true)[0];
         }
 
-        public void Draw(bool draw) {
-            this.draw = draw;
-        }
-
         public int Play(int targetBet) {
             //-1 fold
             // 0 check/call

@@ -12,14 +12,6 @@ namespace PokerNeuralNetwork {
     public class CustomTabControl : TabControl {
 
         /// <summary>
-        ///     Format of the title of the TabPage
-        /// </summary>
-        private readonly StringFormat CenterSringFormat = new StringFormat {
-            Alignment = StringAlignment.Near,
-            LineAlignment = StringAlignment.Center
-        };
-
-        /// <summary>
         ///     The color of the active tab header
         /// </summary>
         private Color activeColor = Color.FromArgb(0, 122, 204);
@@ -219,7 +211,6 @@ namespace PokerNeuralNetwork {
 
                 //If the tab is enabled, draw it
                 if (TabPages[i].Enabled) {
-                    Brush ClosingColorBrush = new SolidBrush(Color.White);
 
                     //Only draws selected index
                     if (i == SelectedIndex) {

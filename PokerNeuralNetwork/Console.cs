@@ -7,13 +7,14 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Reflection;
+using System.Collections.Generic;
 
 namespace PokerNeuralNetwork {
 
     /// <summary>
     /// Console class to take care of debugging and logging
     /// </summary>
-    public class Console {
+    public static class Console {
 
         //Different log types
         public enum LogTypes {
@@ -23,6 +24,16 @@ namespace PokerNeuralNetwork {
             ERROR,
             FATAL
         }
+
+        /// <summary>
+        /// Keep track of the previous command
+        /// </summary>
+        public static List<string> previousCommands = new List<string>();
+
+        /// <summary>
+        /// Current console command, lets you use previous commands
+        /// </summary>
+        public static int currentCommand = -1;
 
         /// <summary>
         /// Catches all non-ui errors and writes them to the log as a fatal
@@ -133,15 +144,12 @@ namespace PokerNeuralNetwork {
 
             output += text + Environment.NewLine;
 
-            //If the form's loaded, append the text to the console
-            if (MainForm.loaded) {
-                MainForm.SetConsoleLogColor(LogTypeToColor(type));
-                MainForm.ConsoleAppendText(output);
-                SendMessage(MainForm.ConsoleHandle(), WM_VSCROLL, (IntPtr)SB_BOTTOM, IntPtr.Zero);
-            }
+            //Append the text to the console
+            MainForm.ConsoleMessage(output, LogTypeToColor(type));
+
 
             //If we're in debug, write to the actual console
-            if (Info.debug) {
+            if (MainForm.debug) {
                 System.Console.Write(output);
             }
 
@@ -157,7 +165,7 @@ namespace PokerNeuralNetwork {
             }
 
             //If we're not in debug mode
-            if (!Info.debug) {
+            if (!MainForm.debug) {
                 //If the log is an error
                 if (type == LogTypes.ERROR) {
                     string caption = "Error!";
@@ -193,7 +201,7 @@ namespace PokerNeuralNetwork {
         /// </summary>
         /// <param name="type">Type of log entry</param>
         /// <returns>Color of text to output</returns>
-        public static Color LogTypeToColor(LogTypes type) {
+        private static Color LogTypeToColor(LogTypes type) {
             switch (type) {
                 case LogTypes.CMD:
                     return Color.Aqua;
@@ -211,11 +219,5 @@ namespace PokerNeuralNetwork {
                     return Color.Lime;
             }
         }
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern int SendMessage(IntPtr hWnd, int wMsg, IntPtr wParam, IntPtr lParam);
-
-        private const int WM_VSCROLL = 0x115;
-        private const int SB_BOTTOM = 7;
     }
 }
